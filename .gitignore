@@ -1,6 +1,3 @@
-# サイト動作に不要なローカルデータ (blend 12MB) は公開対象から除外
-3d_data/
-
 # OpenCodeの設定ファイル
 AGENTS.md
 opencode.json
@@ -12,5 +9,3 @@ Thumbs.db
 *.swp
 *~
 
-# node 関連 (build_index.mjs は依存パッケージなしで動作するため基本不要だが念のため)
-node_modules/
