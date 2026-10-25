@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chrome Built-in AI 翻訳ツール</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Yu Gothic UI", "Noto Sans CJK JP", "Segoe UI", sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 10px;
+      background-color: #f5f5f5;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      gap: 10px;
+    }
+
+    /* 1. 言語選択エリア */
+    .model-frame {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .model-frame select {
+      flex: 1;
+      padding: 5px;
+      font-size: 14px;
+    }
+
+    /* 共通フレーム設定 */
+    fieldset {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      background-color: #fff;
+    }
+
+    legend {
+      font-size: 12px;
+      font-weight: bold;
+      padding: 0 5px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      resize: none;
+      border: none;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .input-text {
+      font-family: "Consolas", "DejaVu Sans Mono", monospace;
+    }
+
+    .output-text {
+      font-family: "Yu Gothic UI", "Noto Sans CJK JP", sans-serif;
+      background-color: #fafafa;
+    }
+
+    .area-frame {
+      flex: 1;
+    }
+
+    /* 4. ボタンエリア */
+    .btn-frame {
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      background-color: #e1e1e1;
+      border: 1px solid #adadad;
+      border-radius: 3px;
+    }
+
+    button:hover {
+      background-color: #e5f1fb;
+      border-color: #0078d7;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .btn-primary {
+      flex: 1;
+    }
+
+    /* 5. ステータスバー */
+    .status-bar {
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+      font-size: 12px;
+      background-color: #f0f0f0;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- 1. 言語ペア選択 -->
+    <div class="model-frame">
+      <label for="langPairSelect">翻訳方向:</label>
+      <select id="langPairSelect">
+        <option value="en-ja">英語 ➔ 日本語 (en ➔ ja)</option>
+        <option value="ja-en">日本語 ➔ 英語 (ja ➔ en)</option>
+      </select>
+    </div>
+
+    <!-- 2. 入力エリア -->
+    <fieldset class="area-frame">
+      <legend>原文入力 [Ctrl+Enterで実行]</legend>
+      <textarea id="inputText" class="input-text" placeholder="ここにテキストを入力してください..."></textarea>
+    </fieldset>
+
+    <!-- 3. 出力エリア -->
+    <fieldset class="area-frame">
+      <legend>翻訳結果 (Output)</legend>
+      <textarea id="outputText" class="output-text" readonly></textarea>
+    </fieldset>
+
+    <!-- 4. ボタンエリア -->
+    <div class="btn-frame">
+      <button id="translateBtn" class="btn-primary">翻訳実行 (Ctrl+Enter)</button>
+      <button id="copyBtn" class="btn-primary">訳文をコピー (Ctrl+C)</button>
+    </div>
+
+    <!-- 5. ステータスバー -->
+    <div id="statusBar" class="status-bar">初期化中...</div>
+  </div>
+
+  <script>
+    const langPairSelect = document.getElementById("langPairSelect");
+    const inputText = document.getElementById("inputText");
+    const outputText = document.getElementById("outputText");
+    const translateBtn = document.getElementById("translateBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const statusBar = document.getElementById("statusBar");
+
+    let currentTranslator = null;
+    let currentPairKey = "";
+
+    function setStatus(message) {
+      statusBar.textContent = message;
+    }
+
+    // Chrome Translator API のサポート確認
+    function checkApiSupport() {
+      const supported =
+        (typeof Translator !== "undefined") ||
+        (typeof translation !== "undefined") ||
+        (typeof ai !== "undefined" && ai.translator);
+
+      if (supported) {
+        setStatus("Chrome Translator API 準備完了");
+      } else {
+        setStatus("エラー: Chrome Translator API 非対応です。chrome://flags/#translation-api を有効にしてください。");
+        translateBtn.disabled = true;
+      }
+    }
+
+    // トランスレーターインスタンスの生成
+    async function getTranslator(sourceLang, targetLang) {
+      const pairKey = `${sourceLang}-${targetLang}`;
+      if (currentTranslator && currentPairKey === pairKey) {
+        return currentTranslator;
+      }
+
+      const options = {
+        sourceLanguage: sourceLang,
+        targetLanguage: targetLang,
+        monitor(m) {
+          m.addEventListener("downloadprogress", (e) => {
+            const percent = Math.round((e.loaded / (e.total || 1)) * 100);
+            setStatus(`言語モデルをダウンロード中... (${percent}%)`);
+          });
+        }
+      };
+
+      let translator = null;
+
+      if (typeof Translator !== "undefined" && typeof Translator.create === "function") {
+        translator = await Translator.create(options);
+      } else if (typeof translation !== "undefined" && typeof translation.createTranslator === "function") {
+        translator = await translation.createTranslator(options);
+      } else if (typeof ai !== "undefined" && ai.translator) {
+        if (typeof ai.translator.createTranslator === "function") {
+          translator = await ai.translator.createTranslator(options);
+        } else if (typeof ai.translator.create === "function") {
+          translator = await ai.translator.create(options);
+        }
+      }
+
+      if (!translator) {
+        throw new Error("トランスレーターの生成に失敗しました。");
+      }
+
+      currentTranslator = translator;
+      currentPairKey = pairKey;
+      return currentTranslator;
+    }
+
+    // 翻訳実行処理（改行対応版）
+    async function startTranslation() {
+      const text = inputText.value;
+      if (!text.trim()) return;
+
+      const [sourceLang, targetLang] = langPairSelect.value.split("-");
+
+      translateBtn.disabled = true;
+      setStatus("翻訳準備中...");
+      outputText.value = "";
+
+      try {
+        const translator = await getTranslator(sourceLang, targetLang);
+
+        // テキストを改行コード単位で分割
+        const lines = text.split("\n");
+        const translatedLines = [];
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+
+          // 空行はそのまま保持
+          if (line.trim() === "") {
+            translatedLines.push("");
+          } else {
+            setStatus(`翻訳中... (${i + 1}/${lines.length} 行目)`);
+            const result = await translator.translate(line);
+            translatedLines.push(result);
+          }
+
+          // 1行終わるごとに結果を順次画面に更新表示
+          outputText.value = translatedLines.join("\n");
+          outputText.scrollTop = outputText.scrollHeight;
+        }
+
+        setStatus("翻訳完了");
+      } catch (e) {
+        console.error(e);
+        setStatus(`エラー: ${e.message}`);
+      } finally {
+        translateBtn.disabled = false;
+      }
+    }
+
+    // 訳文コピー
+    async function copyOutput() {
+      const text = outputText.value.trim();
+      if (text) {
+        await navigator.clipboard.writeText(text);
+        setStatus("訳文をクリップボードにコピーしました");
+      }
+    }
+
+    // イベントバインド
+    translateBtn.addEventListener("click", startTranslation);
+    copyBtn.addEventListener("click", copyOutput);
+
+    inputText.addEventListener("keydown", (e) => {
+      if (e.ctrlKey && e.key === "Enter") {
+        e.preventDefault();
+        startTranslation();
+      }
+    });
+
+    langPairSelect.addEventListener("change", () => {
+      currentTranslator = null;
+    });
+
+    // 初期化
+    checkApiSupport();
+  </script>
+</body>
+</html>
