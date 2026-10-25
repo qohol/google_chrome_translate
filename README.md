@@ -35,9 +35,11 @@ APIを利用可能にするため、ブラウザで以下の設定を行って�
 
 ## 🚀 使い方
 
+[https://qohol.github.io/google_chrome_translate/](https://qohol.github.io/google_chrome_translate/)
+
 1. リポジトリをクローンまたはZIPダウンロードします。
    ```bash
-   git clone https://github.com/your-username/your-repo-name.git
+   git clone https://github.com/qohol/google_chrome_translate.git
    ```
 2. `index.html` をお使いのブラウザで開きます。（Webサーバーは不要です）
 3. 「入力言語」と「出力言語」を選択します。
