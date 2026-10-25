@@ -131,16 +131,16 @@
       <div class="select-group">
         <label for="sourceLangSelect">入力言語:</label>
         <select id="sourceLangSelect">
-          <option value="en">英語 (en)</option>
-          <option value="ja" selected>日本語 (ja)</option>
+          <option value="en" selected>英語 (en)</option>
+          <option value="ja">日本語 (ja)</option>
           <option value="zh">中国語 (zh)</option>
         </select>
       </div>
       <div class="select-group">
         <label for="targetLangSelect">出力言語:</label>
         <select id="targetLangSelect">
-          <option value="en" selected>英語 (en)</option>
-          <option value="ja">日本語 (ja)</option>
+          <option value="en">英語 (en)</option>
+          <option value="ja" selected>日本語 (ja)</option>
           <option value="zh">中国語 (zh)</option>
         </select>
       </div>
@@ -290,4 +290,49 @@
           }
 
           // 1行終わるごとに結果を順次画面に更新表示
-改良版として、入力言語と出力言語を別々のセレクトボックス（`sourceLangSelect` と `targetLangSelect`）に独立させ、同じ言語が選択された場合に警告するバリデーションも追加しています。
+          outputText.value = translatedLines.join("\n");
+          outputText.scrollTop = outputText.scrollHeight;
+        }
+
+        setStatus("翻訳完了");
+      } catch (e) {
+        console.error(e);
+        setStatus(`エラー: ${e.message}`);
+      } finally {
+        translateBtn.disabled = false;
+      }
+    }
+
+    // 訳文コピー
+    async function copyOutput() {
+      const text = outputText.value.trim();
+      if (text) {
+        await navigator.clipboard.writeText(text);
+        setStatus("訳文をクリップボードにコピーしました");
+      }
+    }
+
+    // イベントバインド
+    translateBtn.addEventListener("click", startTranslation);
+    copyBtn.addEventListener("click", copyOutput);
+
+    inputText.addEventListener("keydown", (e) => {
+      if (e.ctrlKey && e.key === "Enter") {
+        e.preventDefault();
+        startTranslation();
+      }
+    });
+
+    sourceLangSelect.addEventListener("change", () => {
+      currentTranslator = null;
+    });
+
+    targetLangSelect.addEventListener("change", () => {
+      currentTranslator = null;
+    });
+
+    // 初期化
+    checkApiSupport();
+  </script>
+</body>
+</html>
