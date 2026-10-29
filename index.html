@@ -3,8 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
   <title>Chrome Built-in AI 翻訳ツール</title>
   <style>
+    /* ===== デザイントークン（ダークテーマ） ===== */
+    :root {
+      --bg: #0b0f17;
+      --bg-elevated: #101622;
+      --surface: rgba(23, 31, 45, 0.72);
+      --surface-solid: #171f2d;
+      --border: rgba(148, 163, 184, 0.12);
+      --border-strong: rgba(148, 163, 184, 0.22);
+      --text: #e6edf6;
+      --text-muted: #93a1b5;
+      --text-faint: #64748b;
+      --accent: #5b8cff;
+      --accent-2: #22d3ee;
+      --accent-soft: rgba(91, 140, 255, 0.14);
+      --success: #34d399;
+      --warning: #fbbf24;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 9px;
+      --shadow: 0 18px 50px -24px rgba(0, 0, 0, 0.9);
+      --ring: 0 0 0 3px rgba(91, 140, 255, 0.28);
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -16,110 +40,306 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
-      padding: 10px;
-      background-color: #f5f5f5;
+      padding: 20px;
+      color: var(--text);
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(900px 520px at 12% -10%, rgba(91, 140, 255, 0.16), transparent 65%),
+        radial-gradient(760px 460px at 92% 0%, rgba(34, 211, 238, 0.12), transparent 62%),
+        radial-gradient(900px 700px at 50% 120%, rgba(139, 92, 246, 0.10), transparent 70%);
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
     }
 
     .container {
       display: flex;
       flex-direction: column;
       height: 100%;
-      gap: 10px;
+      gap: 14px;
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
     }
 
-    /* 1. 言語選択エリア */
+    /* ===== 1. 言語選択エリア ===== */
     .language-selection {
       display: flex;
-      gap: 10px;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow);
     }
 
     .select-group {
       flex: 1;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .select-group label {
+      flex: none;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      white-space: nowrap;
     }
 
     .select-group select {
       flex: 1;
-      padding: 5px;
+      min-width: 0;
+      padding: 9px 34px 9px 12px;
       font-size: 14px;
+      color: var(--text);
+      background-color: rgba(11, 15, 23, 0.85);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2393a1b5' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
     }
 
-    /* 共通フレーム設定 */
+    .select-group select:hover {
+      border-color: rgba(91, 140, 255, 0.45);
+    }
+
+    .select-group select:focus-visible {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: var(--ring);
+    }
+
+    .select-group select option {
+      color: var(--text);
+      background-color: var(--surface-solid);
+    }
+
+    /* ===== 共通フレーム設定（カード） ===== */
     fieldset {
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 6px 16px 14px;
       display: flex;
       flex-direction: column;
-      background-color: #fff;
+      min-height: 0;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    fieldset:focus-within {
+      border-color: rgba(91, 140, 255, 0.42);
+      box-shadow: var(--shadow), 0 0 0 1px rgba(91, 140, 255, 0.18);
     }
 
     legend {
-      font-size: 12px;
-      font-weight: bold;
-      padding: 0 5px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0 8px;
+      margin-left: -4px;
+      color: var(--text-muted);
     }
 
     textarea {
       width: 100%;
       height: 100%;
+      min-height: 0;
       resize: none;
       border: none;
       outline: none;
-      font-size: 14px;
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text);
+      background: transparent;
+      caret-color: var(--accent);
+      padding: 6px 2px 0;
+    }
+
+    textarea::placeholder {
+      color: var(--text-faint);
+    }
+
+    /* スクロールバー（WebKit） */
+    textarea::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    textarea::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    textarea::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.22);
+      border: 3px solid transparent;
+      border-radius: 999px;
+      background-clip: content-box;
+    }
+
+    textarea::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.38);
+      background-clip: content-box;
     }
 
     .input-text {
       font-family: "Consolas", "DejaVu Sans Mono", monospace;
+      font-size: 14px;
     }
 
     .output-text {
       font-family: "Yu Gothic UI", "Noto Sans CJK JP", sans-serif;
-      background-color: #fafafa;
+      color: #cfe0ff;
+      cursor: default;
     }
 
     .area-frame {
       flex: 1;
     }
 
-    /* 4. ボタンエリア */
+    /* ===== 4. ボタンエリア ===== */
     .btn-frame {
       display: flex;
-      gap: 10px;
+      gap: 12px;
     }
 
     button {
-      padding: 8px 12px;
+      position: relative;
+      padding: 12px 18px;
       font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
       cursor: pointer;
-      background-color: #e1e1e1;
-      border: 1px solid #adadad;
-      border-radius: 3px;
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, rgba(38, 48, 68, 0.95), rgba(24, 32, 46, 0.95));
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 8px 20px -14px rgba(0, 0, 0, 0.9);
+      transition: transform 0.12s ease, border-color 0.16s ease, background-color 0.16s ease,
+        box-shadow 0.16s ease, color 0.16s ease, filter 0.16s ease;
     }
 
     button:hover {
-      background-color: #e5f1fb;
-      border-color: #0078d7;
+      border-color: rgba(91, 140, 255, 0.55);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset, 0 10px 26px -14px rgba(91, 140, 255, 0.7);
+      filter: brightness(1.08);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button:focus-visible {
+      outline: none;
+      box-shadow: var(--ring);
     }
 
     button:disabled {
       cursor: not-allowed;
-      opacity: 0.6;
+      opacity: 0.45;
+      filter: saturate(0.4);
+      transform: none;
+      box-shadow: none;
     }
 
     .btn-primary {
       flex: 1;
     }
 
-    /* 5. ステータスバー */
+    /* 翻訳実行ボタン（アクセント） */
+    #translateBtn {
+      color: #f7faff;
+      border-color: rgba(91, 140, 255, 0.55);
+      background: linear-gradient(180deg, #4d7ef7, #3457c9);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22) inset, 0 14px 30px -16px rgba(91, 140, 255, 0.9);
+    }
+
+    #translateBtn:hover:not(:disabled) {
+      background: linear-gradient(180deg, #5b8cff, #3c63e0);
+      border-color: rgba(140, 175, 255, 0.7);
+    }
+
+    #copyBtn:hover:not(:disabled) {
+      color: #eaf1ff;
+    }
+
+    /* ===== 5. ステータスバー ===== */
     .status-bar {
-      border: 1px solid #ccc;
-      padding: 4px 8px;
-      font-size: 12px;
-      background-color: #f0f0f0;
-      color: #333;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 36px;
+      padding: 8px 14px 8px 34px;
+      font-size: 12.5px;
+      letter-spacing: 0.01em;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(16, 22, 34, 0.8);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ステータスインジケーター（点） */
+    .status-bar::before {
+      content: "";
+      position: absolute;
+      left: 14px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-2);
+      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.16), 0 0 12px rgba(34, 211, 238, 0.8);
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.86); }
+    }
+
+    /* ===== レスポンシブ ===== */
+    @media (max-width: 720px) {
+      body {
+        padding: 12px;
+      }
+
+      .language-selection {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .btn-frame {
+        flex-direction: column;
+      }
+
+      .status-bar {
+        white-space: normal;
+        border-radius: var(--radius-md);
+        line-height: 1.5;
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .status-bar::before {
+        animation: none;
+      }
+
+      * {
+        transition: none !important;
+      }
     }
   </style>
 </head>
@@ -129,7 +349,7 @@
     <!-- 1. 言語選択エリア（入力・出力分離） -->
     <div class="language-selection">
       <div class="select-group">
-        <label for="sourceLangSelect">入力言語:</label>
+        <label for="sourceLangSelect">入力言語</label>
         <select id="sourceLangSelect">
           <option value="en" selected>英語 (en)</option>
           <option value="ja">日本語 (ja)</option>
@@ -137,7 +357,7 @@
         </select>
       </div>
       <div class="select-group">
-        <label for="targetLangSelect">出力言語:</label>
+        <label for="targetLangSelect">出力言語</label>
         <select id="targetLangSelect">
           <option value="en">英語 (en)</option>
           <option value="ja" selected>日本語 (ja)</option>
@@ -155,7 +375,7 @@
     <!-- 3. 出力エリア -->
     <fieldset class="area-frame">
       <legend>翻訳結果 (Output)</legend>
-      <textarea id="outputText" class="output-text" readonly></textarea>
+      <textarea id="outputText" class="output-text" placeholder="翻訳結果がここに表示されます" readonly></textarea>
     </fieldset>
 
     <!-- 4. ボタンエリア -->
